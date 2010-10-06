@@ -1,9 +1,5 @@
 import re, urllib
 
-from PMS import *
-from PMS.Objects import *
-from PMS.Shortcuts import *
-
 PBS_PREFIX      = "/video/pbs"
 CACHE_INTERVAL  = 3600 * 3
 PBS_URL         = 'http://www.pbs.org/video/'
@@ -16,7 +12,7 @@ def Start():
   MediaContainer.content = 'Items'
   MediaContainer.art = R('art-default.jpg')
   DirectoryItem.thumb = R("icon-default.png")
-  HTTP.SetCacheTime(CACHE_INTERVAL)
+  HTTP.CacheTime = CACHE_INTERVAL
 
 ####################################################################################################
 def UpdateCache():
@@ -29,14 +25,14 @@ def MainMenu():
   dir.Append(Function(DirectoryItem(GetPrograms, title="All Topics"), cls='subnav hide twocol', releases='program', prefix="li[@class='topics-nav']/", path='li/ol/li/a'))
   dir.Append(Function(DirectoryItem(GetPrograms, title="All Collections"), cls='subnav hide twocol', releases='feature', prefix="li[@class='collections-nav']/", path='li/ol/li/a'))
   dir.Append(Function(DirectoryItem(GetShorties, title="Most Watched"), name='mostWatched'))  
-  dir.Append(Function(SearchDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=R('search.png'))))
+  dir.Append(Function(InputDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=R('search.png'))))
   return dir
 
 ####################################################################################################
 def GetPrograms(sender, cls, releases, prefix='', path='li/ol/li/a'):
   dir = MediaContainer(title2=sender.itemTitle)
   Log("//%sul[@class='%s']/%s" % (prefix, cls, path))
-  for program in XML.ElementFromURL(PBS_URL, True).xpath("//%sul[@class='%s']/%s" % (prefix, cls, path)):
+  for program in HTML.ElementFromURL(PBS_URL).xpath("//%sul[@class='%s']/%s" % (prefix, cls, path)):
     pid = re.findall('[0-9]+', program.get('href'))[0]
     dir.Append(Function(DirectoryItem(GetProgram, title=program.text), pid=pid, releases=releases))
   return dir
@@ -44,7 +40,7 @@ def GetPrograms(sender, cls, releases, prefix='', path='li/ol/li/a'):
 ####################################################################################################
 def GetShorties(sender, name):
   dir = MediaContainer(title2=sender.itemTitle)
-  for show in XML.ElementFromURL('http://www.pbs.org/video/%s/PBS/' % name, True).xpath('//li'):
+  for show in HTML.ElementFromURL('http://www.pbs.org/video/%s/PBS/' % name).xpath('//li'):
     title = show.xpath('div/a')[0].get('title')
     subtitle = show.xpath('div/span/a')[0].text
     summary = ''
@@ -56,17 +52,22 @@ def GetShorties(sender, name):
 
 ####################################################################################################
 def GetProgram(sender, pid, releases):
-  dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   url = PBS_URL + '%sReleases/%s/start/1/end/99' % (releases, pid)
-  for show in XML.ElementFromURL(url, True).xpath('//dl'):
-    dir.Append(ParseVideo(sender.itemTitle, show))
-  return dir
+  try:
+      dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+      #url = PBS_URL + '%sReleases/%s/start/1/end/99' % (releases, pid)
+      for show in HTML.ElementFromURL(url).xpath('//dl'):
+        dir.Append(ParseVideo(sender.itemTitle, show))
+      return dir
+  except Ex.URLError, error:
+      Log.Error("Error accessing "+url + ":" + str(error))
+      return MessageContainer("PBS","Error accessing server: "+str(error)+ ". Please try again.")
   
 ####################################################################################################
 def Search(sender, query, page=1):
   dir = MediaContainer(viewGroup='Details', title2='Search Results', replaceParent=(page>1))
   query = query.replace(' ', '+')
-  for show in XML.ElementFromURL(PBS_URL + 'searchForm/?q=%s' % (query), True).xpath('//dl'):
+  for show in HTML.ElementFromURL(PBS_URL + 'searchForm/?q=%s' % (query)).xpath('//dl'):
     dir.Append(ParseVideo('', show))
   return dir
 
@@ -105,14 +106,14 @@ def ExtractReleaseUrlNative(releaseUrl):
 def PlayVideo(sender, sid):
   url = PBS_URL + 'videoPlayerInfo/%s' % sid
   
-  xml = HTTP.Request(url, cacheTime=0)
+  xml = HTTP.Request(url, cacheTime=0).content
   #xml = String.Unquote(xml, False)
   start = 12 + xml.find('<releaseURL>')
   end = xml.find('</releaseURL>')
   release = xml[start:end]
   releaseUrl = ExtractReleaseUrlNative(release)
   NS = {"ns":"http://www.w3.org/2001/SMIL20/Language", "tp":"http://xml.theplatform.com/mps/metadata/content/custom"}
-  xml = XML.ElementFromURL(releaseUrl, False, cacheTime=0)
+  xml = XML.ElementFromURL(releaseUrl, cacheTime=0)
   player = xml.xpath('/ns:smil/ns:head/ns:meta', namespaces=NS)[0].get('base')
   directFeed = player.find('http://') > -1
   if directFeed: 
@@ -122,3 +123,4 @@ def PlayVideo(sender, sid):
   else: 
     clip = 'mp4:'+xml.xpath('/ns:smil/ns:body//ns:ref', namespaces=NS)[0].get('src').replace('.mp4','')
   return Redirect(RTMPVideoItem(player, clip))
+  
