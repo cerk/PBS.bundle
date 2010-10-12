@@ -1,8 +1,9 @@
-import re, urllib
+import re
 
 PBS_PREFIX      = "/video/pbs"
 CACHE_INTERVAL  = 3600 * 3
 PBS_URL         = 'http://www.pbs.org/video/'
+PAGE_SIZE  		= 10
 
 ####################################################################################################
 def Start():
@@ -51,17 +52,22 @@ def GetShorties(sender, name):
   return dir
 
 ####################################################################################################
-def GetProgram(sender, pid, releases):
+def GetProgram(sender, pid, releases, start=0):
   url = PBS_URL + '%sReleases/%s/start/1/end/99' % (releases, pid)
-  try:
-      dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-      #url = PBS_URL + '%sReleases/%s/start/1/end/99' % (releases, pid)
-      for show in HTML.ElementFromURL(url).xpath('//dl'):
-        dir.Append(ParseVideo(sender.itemTitle, show))
-      return dir
-  except Ex.URLError, error:
-      Log.Error("Error accessing "+url + ":" + str(error))
-      return MessageContainer("PBS","Error accessing server: "+str(error)+ ". Please try again.")
+  Log("URL:"+url)
+  timeoutCount = 0
+  while timeoutCount < 5:
+	  try:
+	      dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+	      for show in HTML.ElementFromURL(url).xpath('//dl'):
+	        dir.Append(ParseVideo(sender.itemTitle, show))
+	      return dir
+	  except Ex.URLError, error:
+	      timeoutCount = timeoutCount + 1
+	      Log("Timeout Count:"+str(timeoutCount))
+	     
+  Log.Error("Error accessing "+url + ":" + str(error))
+  return MessageContainer("PBS","Error accessing server: "+str(error)+ ". Please try again.")
   
 ####################################################################################################
 def Search(sender, query, page=1):
