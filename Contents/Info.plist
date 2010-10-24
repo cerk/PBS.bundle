@@ -21,12 +21,14 @@
 	<key>PlexFrameworkVersion</key>
 	<string>2</string>
 	<key>PlexMediaContainer</key>
-	<string>FLV</string>
+	<array>
+		<string>FLV</string>
+	</array>
+	<key>PlexPluginCodePolicy</key>
+	<string>Elevated</string>
 	<key>PlexPluginDebug</key>
 	<string>1</string>
 	<key>PlexPluginMode</key>
 	<string>AlwaysOn</string>
-	<key>PlexPluginCodePolicy</key>
-	<string>Elevated</string>
 </dict>
 </plist>
