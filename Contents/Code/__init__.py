@@ -2,8 +2,8 @@ import re
 
 PBS_PREFIX      = "/video/pbs"
 CACHE_INTERVAL  = 3600 * 3
-PBS_URL         = 'http://www.pbs.org/video/'
-PAGE_SIZE  		= 10
+PBS_URL         = 'http://video.pbs.org/'
+PAGE_SIZE  		= 12
 
 ####################################################################################################
 def Start():
@@ -22,20 +22,31 @@ def UpdateCache():
 ####################################################################################################
 def MainMenu():
   dir = MediaContainer()
-  dir.Append(Function(DirectoryItem(GetPrograms, title="All Programs"), cls='subnav hide threecol', releases='program'))
-  dir.Append(Function(DirectoryItem(GetPrograms, title="All Topics"), cls='subnav hide twocol', releases='program', prefix="li[@class='topics-nav']/", path='li/ol/li/a'))
-  dir.Append(Function(DirectoryItem(GetPrograms, title="All Collections"), cls='subnav hide twocol', releases='feature', prefix="li[@class='collections-nav']/", path='li/ol/li/a'))
+  dir.Append(Function(DirectoryItem(GetPrograms, title="All Programs"), cls='subnav hide threecol'))
+  dir.Append(Function(DirectoryItem(GetCollectionPrograms, title="All Topics"), cls='subnav hide twocol', category='subject', prefix="li[@class='topics-nav']/", path='li/ol/li/a'))
+  dir.Append(Function(DirectoryItem(GetCollectionPrograms, title="All Collections"), cls='subnav hide twocol', category='feature', prefix="li[@class='collections-nav']/", path='li/ol/li/a'))
   dir.Append(Function(DirectoryItem(GetShorties, title="Most Watched"), name='mostWatched'))  
   dir.Append(Function(InputDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=R('search.png'))))
   return dir
 
 ####################################################################################################
-def GetPrograms(sender, cls, releases, prefix='', path='li/ol/li/a'):
+def GetPrograms(sender, cls, prefix='', path='li/ol/li/a'):
   dir = MediaContainer(title2=sender.itemTitle)
   Log("//%sul[@class='%s']/%s" % (prefix, cls, path))
   for program in HTML.ElementFromURL(PBS_URL).xpath("//%sul[@class='%s']/%s" % (prefix, cls, path)):
     pid = re.findall('[0-9]+', program.get('href'))[0]
-    dir.Append(Function(DirectoryItem(GetProgram, title=program.text), pid=pid, releases=releases))
+    Log("PID:"+pid+":"+program.text)
+    dir.Append(Function(DirectoryItem(GetEpisodes, title=program.text), pid=pid))
+  return dir
+  
+####################################################################################################
+def GetCollectionPrograms(sender, cls, category, prefix='', path='li/ol/li/a'):
+  dir = MediaContainer(title2=sender.itemTitle)
+  Log("//%sul[@class='%s']/%s" % (prefix, cls, path))
+  for program in HTML.ElementFromURL(PBS_URL).xpath("//%sul[@class='%s']/%s" % (prefix, cls, path)):
+    pid = re.findall('[0-9]+', program.get('href'))[0]
+    Log("PID:"+pid+":"+program.text)
+    dir.Append(Function(DirectoryItem(GetProgram, title=program.text), pid=pid, category=category))
   return dir
 
 ####################################################################################################
@@ -50,10 +61,10 @@ def GetShorties(sender, name):
     sid = href.split('/')[-2]
     dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, None, thumb), sid=sid))
   return dir
-
+  
 ####################################################################################################
-def GetProgram(sender, pid, releases, start=0):
-  url = PBS_URL + '%sReleases/%s/start/1/end/99' % (releases, pid)
+def GetProgram(sender, pid, category, start=0):
+  url = PBS_URL + '%s/%s/start/1/end/99' % (category, pid)
   Log("URL:"+url)
   timeoutCount = 0
   while timeoutCount < 5:
@@ -65,9 +76,32 @@ def GetProgram(sender, pid, releases, start=0):
 	  except Ex.URLError, error:
 	      timeoutCount = timeoutCount + 1
 	      Log("Timeout Count:"+str(timeoutCount))
-	     
+
   Log.Error("Error accessing "+url + ":" + str(error))
   return MessageContainer("PBS","Error accessing server: "+str(error)+ ". Please try again.")
+
+####################################################################################################
+def GetEpisodes(sender, pid):
+  url = PBS_URL + 'programEpisodes/%s/start/1/end/99' % (pid)
+  Log("URL:"+url)
+  dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+  content = JSON.ObjectFromURL(url)
+  for episode in content:
+     title = episode['title']
+     subtitle = "Aired "+episode['airdate']
+     summary = episode['short_description']
+     duration = episode['duration']
+     duration = [int(d) for d in duration.split(':')]
+     if len(duration) == 3:
+        duration = duration[0]*3600+duration[1]*60+duration[2]
+     else:
+        duration = duration[0]*60+duration[1]
+     duration = duration * 1000
+     thumb = episode['thumbnail_url']
+     sid = episode['contentID']
+     dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, duration, thumb), sid=sid))
+  return dir
+
   
 ####################################################################################################
 def Search(sender, query, page=1):
