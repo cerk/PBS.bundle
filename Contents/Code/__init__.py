@@ -81,8 +81,8 @@ def GetProgram(sender, pid, category, start=0):
   return MessageContainer("PBS","Error accessing server: "+str(error)+ ". Please try again.")
 
 ####################################################################################################
-def GetEpisodes(sender, pid):
-  url = PBS_URL + 'programEpisodes/%s/start/1/end/99' % (pid)
+def GetEpisodes(sender, pid, page=1):
+  url = PBS_URL + 'programEpisodes/%s/start/%d/end/%d' % (pid, page, page+PAGE_SIZE)
   Log("URL:"+url)
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   content = JSON.ObjectFromURL(url)
@@ -100,6 +100,8 @@ def GetEpisodes(sender, pid):
      thumb = episode['thumbnail_url']
      sid = episode['contentID']
      dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, duration, thumb), sid=sid))
+  if len(content) == PAGE_SIZE:
+     dir.Append(Function(DirectoryItem(GetEpisodes, title="More ..."), pid=pid, page=page+PAGE_SIZE))
   return dir
 
   
