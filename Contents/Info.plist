@@ -26,9 +26,11 @@
 	</array>
 	<key>PlexPluginCodePolicy</key>
 	<string>Elevated</string>
-	<key>PlexPluginDebug</key>
-	<string>1</string>
+	<key>PlexPluginConsoleLogging</key>
+	<string>0</string>
 	<key>PlexPluginMode</key>
 	<string>AlwaysOn</string>
+	<key>PlexServerPlatforms</key>
+	<string>MacOSX-i386,Linux-i386</string>
 </dict>
 </plist>
