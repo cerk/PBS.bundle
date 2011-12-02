@@ -23,7 +23,7 @@ def UpdateCache():
 def VideoMenu():
   dir = MediaContainer(noCache=True)
   dir.Append(Function(DirectoryItem(GetPrograms, title="All Programs"), cls='subnav hide threecol'))
-  dir.Append(Function(DirectoryItem(GetPrograms, title="All Topics"), cls='subnav hide twocol', prefix="li[@class='topics-nav']/", path='li/ol/li/a'))
+  dir.Append(Function(DirectoryItem(GetPrograms, title="All Topics"), cls='subnav hide twocol', prefix="li[@class='topics-nav']/", path='li/ol/li/a/text()[normalize-space(.)]/parent::a'))
   dir.Append(Function(DirectoryItem(GetMostWatched, title="Most Watched")))  
   dir.Append(Function(InputDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=S('search.png'))))
   return dir
