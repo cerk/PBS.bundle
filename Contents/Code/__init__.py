@@ -56,7 +56,7 @@ def GetEpisodes(sender, pid, page=1):
   url = pid
   data = HTML.ElementFromURL(url)
   for episode in data.xpath('//div[@id="fullepisodes"]//div[@class="videobox "]'):
-     title = episode.xpath('.//h2[@class="title"]/text()')[0].text
+     title = episode.xpath('.//h2[@class="title"]')[0].text
      try: subtitle = episode.xpath('.//span[@class="airdate"]')[0].text
      except: subtitle = ''
      summary = episode.xpath('.//span[@class="description"]')[0].text
