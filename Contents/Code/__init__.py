@@ -7,7 +7,7 @@ PAGE_SIZE  		= 12
 
 ####################################################################################################
 def Start():
-  Plugin.AddPrefixHandler(PBS_PREFIX, MainMenu, 'PBS', 'icon-default.png', 'art-default.jpg')
+  Plugin.AddPrefixHandler(PBS_PREFIX, VideoMenu, 'PBS', 'icon-default.png', 'art-default.jpg')
   Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
   MediaContainer.title1 = 'PBS'
   MediaContainer.content = 'Items'
@@ -20,13 +20,12 @@ def UpdateCache():
   HTTP.Request(PBS_URL)
 
 ####################################################################################################
-def MainMenu():
-  dir = MediaContainer()
+def VideoMenu():
+  dir = MediaContainer(noCache=True)
   dir.Append(Function(DirectoryItem(GetPrograms, title="All Programs"), cls='subnav hide threecol'))
-  dir.Append(Function(DirectoryItem(GetCollectionPrograms, title="All Topics"), cls='subnav hide twocol', category='subject', prefix="li[@class='topics-nav']/", path='li/ol/li/a'))
-  dir.Append(Function(DirectoryItem(GetCollectionPrograms, title="All Collections"), cls='subnav hide twocol', category='feature', prefix="li[@class='collections-nav']/", path='li/ol/li/a'))
-  dir.Append(Function(DirectoryItem(GetShorties, title="Most Watched"), name='mostWatched'))  
-  dir.Append(Function(InputDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=R('search.png'))))
+  dir.Append(Function(DirectoryItem(GetPrograms, title="All Topics"), cls='subnav hide twocol', prefix="li[@class='topics-nav']/", path='li/ol/li/a'))
+  dir.Append(Function(DirectoryItem(GetMostWatched, title="Most Watched")))  
+  dir.Append(Function(InputDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=S('search.png'))))
   return dir
 
 ####################################################################################################
@@ -34,107 +33,65 @@ def GetPrograms(sender, cls, prefix='', path='li/ol/li/a'):
   dir = MediaContainer(title2=sender.itemTitle)
   Log("//%sul[@class='%s']/%s" % (prefix, cls, path))
   for program in HTML.ElementFromURL(PBS_URL).xpath("//%sul[@class='%s']/%s" % (prefix, cls, path)):
-    pid = re.findall('[0-9]+', program.get('href'))[0]
-    Log("PID:"+pid+":"+program.text)
-    dir.Append(Function(DirectoryItem(GetEpisodes, title=program.text), pid=pid))
+    url = program.get('href')
+    dir.Append(Function(DirectoryItem(GetEpisodes, title=program.text), pid=url))
   return dir
   
 ####################################################################################################
-def GetCollectionPrograms(sender, cls, category, prefix='', path='li/ol/li/a'):
+def GetMostWatched(sender):
   dir = MediaContainer(title2=sender.itemTitle)
-  Log("//%sul[@class='%s']/%s" % (prefix, cls, path))
-  for program in HTML.ElementFromURL(PBS_URL).xpath("//%sul[@class='%s']/%s" % (prefix, cls, path)):
-    pid = re.findall('[0-9]+', program.get('href'))[0]
-    Log("PID:"+pid+":"+program.text)
-    dir.Append(Function(DirectoryItem(GetProgram, title=program.text), pid=pid, category=category))
-  return dir
-
-####################################################################################################
-def GetShorties(sender, name):
-  dir = MediaContainer(title2=sender.itemTitle)
-  for show in HTML.ElementFromURL('http://www.pbs.org/video/%s/PBS/' % name).xpath('//li'):
-    title = show.xpath('div/a')[0].get('title')
-    subtitle = show.xpath('div/span/a')[0].text
+  for show in HTML.ElementFromURL(PBS_URL).xpath('//div[@id="most-watched-videos"]//li'):
+    title = show.xpath('.//span[@class="title clear clearfix"]/a')[0].text
+    subtitle = show.xpath('.//span[@class="description"]')[0].text.strip()
     summary = ''
-    thumb = show.xpath('div/a/span[@class="video-thumbnail"]/img')[0].get('src')
-    href = show.xpath('div/a')[0].get('href')
+    thumb = show.xpath('.//img')[0].get('src')
+    href = show.xpath('.//div/a')[0].get('href')
     sid = href.split('/')[-2]
     dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, None, thumb), sid=sid))
   return dir
   
 ####################################################################################################
-def GetProgram(sender, pid, category, start=0):
-  url = PBS_URL + '%s/%s/start/1/end/99' % (category, pid)
-  Log("URL:"+url)
-  timeoutCount = 0
-  while timeoutCount < 5:
-	  try:
-	      dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-	      for show in HTML.ElementFromURL(url).xpath('//dl'):
-	        dir.Append(ParseVideo(sender.itemTitle, show))
-	      return dir
-	  except Ex.URLError, error:
-	      timeoutCount = timeoutCount + 1
-	      Log("Timeout Count:"+str(timeoutCount))
-
-  Log.Error("Error accessing "+url + ":" + str(error))
-  return MessageContainer("PBS","Error accessing server: "+str(error)+ ". Please try again.")
-
-####################################################################################################
 def GetEpisodes(sender, pid, page=1):
-  url = PBS_URL + 'programEpisodes/%s/start/%d/end/%d' % (pid, page, page+PAGE_SIZE)
-  Log("URL:"+url)
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-  content = JSON.ObjectFromURL(url)
-  for episode in content:
-     title = episode['title']
-     subtitle = "Aired "+episode['airdate']
-     summary = episode['short_description']
-     duration = episode['duration']
+  url = pid
+  data = HTML.ElementFromURL(url)
+  for episode in data.xpath('//div[@id="fullepisodes"]//div[@class="videobox "]'):
+     title = episode.xpath('.//h2[@class="title"]/text()')[0].text
+     try: subtitle = episode.xpath('.//span[@class="airdate"]')[0].text
+     except: subtitle = ''
+     summary = episode.xpath('.//span[@class="description"]')[0].text
+     duration = episode.xpath('.//span[@class="duration"]')[0].text
      duration = [int(d) for d in duration.split(':')]
      if len(duration) == 3:
         duration = duration[0]*3600+duration[1]*60+duration[2]
      else:
         duration = duration[0]*60+duration[1]
      duration = duration * 1000
-     thumb = episode['thumbnail_url']
-     sid = episode['contentID']
+     thumb = episode.xpath('.//img[@class="thumbnail"]')[0].get('src')
+     sid = episode.xpath('.//input[@class="contentID"]')[0].get('value')
      dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, duration, thumb), sid=sid))
-  if len(content) == PAGE_SIZE:
-     dir.Append(Function(DirectoryItem(GetEpisodes, title="More ..."), pid=pid, page=page+PAGE_SIZE))
   return dir
-
   
 ####################################################################################################
 def Search(sender, query, page=1):
   dir = MediaContainer(viewGroup='Details', title2='Search Results', replaceParent=(page>1))
   query = query.replace(' ', '+')
-  for show in HTML.ElementFromURL(PBS_URL + 'searchForm/?q=%s' % (query)).xpath('//dl'):
-    dir.Append(ParseVideo('', show))
+  data = HTML.ElementFromURL('http://www.pbs.org/search/?q=%s&mediatype=Video&start=%d' % (query, (int(page)-1)*10))
+  for show in data.xpath('//div[@class="ez-mod ez-itemMod ez-mainSearch ez-col-1"]//li'):
+    try:
+      show_title = ''.join(show.xpath('.//p[@class="ez-metaextra1 ez-icon"]//text()'))
+      ep_title = ''.join(show.xpath('.//a[@class="ez-title"]//text()'))
+      title = '%s | %s' % (show_title, ep_title) 
+      summary = ''.join(show.xpath('.//p[@class="ez-desc"]//text()'))
+      thumb = show.xpath('.//img[@class="ez-primaryThumb"]')[0].get('src')
+      sid = show.xpath('.//a[@class="ez-title"]')[0].get('href').split('/')[-1]
+      dir.Append(Function(VideoItem(PlayVideo, title, summary=summary, thumb=thumb), sid=sid))
+    except:
+      pass
+  if len(data.xpath('//a[@title="Next Result Page"]')) != 0:
+    dir.Append(Function(DirectoryItem(Search, title="More results"), query=query, page=page+1))
   return dir
 
-####################################################################################################
-def ParseVideo(show_title, show):
-  title = show.xpath('dd/p/a')[0].text
-  title = title.strip()
-  
-  if len(show_title):
-    title = title.replace(show_title, '').replace('|','').strip()
-  
-  summary = show.xpath('dd/p/span[@class="list"]')[0].text
-  thumb = show.xpath('dt/img')[0].get('src')
-  sid = re.findall('/[0-9]+/', show.xpath('dt/a[@class="play"]')[0].get('href'))[0][1:-1] 
-  duration = show.xpath('dd/p/span[@class="time"]')[0].text.replace('(','').replace(')','')
-  duration = [int(d) for d in duration.split(':')]
-  if len(duration) == 3:
-    duration = duration[0]*3600+duration[1]*60+duration[2]
-  else:
-    duration = duration[0]*60+duration[1]
-  duration = duration * 1000
-  subtitle = [e.strip() for e in show.xpath('dd/ul/li[@class="info"]/p')[0].itertext()][1]
-  return Function(VideoItem(PlayVideo, title, subtitle, summary, duration, thumb), sid=sid)
-
-	
 ####################################################################################################
 def ExtractReleaseUrlNative(releaseUrl):
 	Log("ReleaseURL:"+releaseUrl)
@@ -160,8 +117,6 @@ def PlayVideo(sender, sid):
   directFeed = player.find('http://') > -1
   if directFeed: 
     clip = xml.xpath('/ns:smil/ns:body//ns:ref', namespaces=NS)[0].get('src')
-    #player = "http://www-tc.pbs.org/cove-ingest/"
-    #clip = "errormessages/Unavailable.flv"
   else: 
     clip = 'mp4:'+xml.xpath('/ns:smil/ns:body//ns:ref', namespaces=NS)[0].get('src').replace('.mp4','')
   return Redirect(RTMPVideoItem(player, clip))
