@@ -35,5 +35,9 @@
 	<string>AlwaysOn</string>
 	<key>PlexServerPlatforms</key>
 	<string>MacOSX-i386,Linux-i386</string>
+	<key>PlexPluginRegions</key>
+	<array>
+		<string>US</string>
+	</array>
 </dict>
 </plist>
