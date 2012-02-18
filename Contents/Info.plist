@@ -33,6 +33,8 @@
 	<string>Elevated</string>
 	<key>PlexPluginMode</key>
 	<string>AlwaysOn</string>
+	<key>PlexClientPlatforms</key>
+	<string>*</string>
 	<key>PlexServerPlatforms</key>
 	<string>MacOSX-i386,Linux-i386</string>
 	<key>PlexPluginRegions</key>
