@@ -16,12 +16,6 @@
 	<string>hook</string>
 	<key>CFBundleVersion</key>
 	<string>1.0</string>
-	<key>PlexFrameworkVersion</key>
-	<string>2</string>
-	<key>PlexMediaContainer</key>
-	<array>
-		<string>Flash</string>
-	</array>
 	<key>PlexClientCapabilities</key>
 	<dict>
 		<key>protocols</key>
@@ -29,17 +23,25 @@
 			<string>webkit</string>
 		</array>
 	</dict>
+	<key>PlexClientPlatformExclusions</key>
+	<string>Roku</string>
+	<key>PlexClientPlatforms</key>
+	<string>*</string>
+	<key>PlexFrameworkVersion</key>
+	<string>2</string>
+	<key>PlexMediaContainer</key>
+	<array>
+		<string>Flash</string>
+	</array>
 	<key>PlexPluginCodePolicy</key>
 	<string>Elevated</string>
 	<key>PlexPluginMode</key>
 	<string>AlwaysOn</string>
-	<key>PlexClientPlatforms</key>
-	<string>*</string>
-	<key>PlexServerPlatforms</key>
-	<string>MacOSX-i386,Linux-i386</string>
 	<key>PlexPluginRegions</key>
 	<array>
 		<string>US</string>
 	</array>
+	<key>PlexServerPlatforms</key>
+	<string>MacOSX-i386,Linux-i386</string>
 </dict>
 </plist>
