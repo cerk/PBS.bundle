@@ -5,6 +5,9 @@ CACHE_INTERVAL  = 3600 * 3
 PBS_URL         = 'http://video.pbs.org/'
 PAGE_SIZE  		= 12
 
+# Used for platforms that do not have the Helper decrypt binary
+PBS_WEB_VIDEO_PREFIX = 'http://www-tc.pbs.org/s3/pbs.videoportal-prod.cdn/media/swf/PBSPlayer.swf?embed=true&start=0&width=512&height=288&reporting_url=&session_id=-&video=http://video.pbs.org/videoPlayerInfo/%s'
+
 ####################################################################################################
 def Start():
   Plugin.AddPrefixHandler(PBS_PREFIX, VideoMenu, 'PBS', 'icon-default.png', 'art-default.jpg')
@@ -47,8 +50,11 @@ def GetMostWatched(sender):
     thumb = show.xpath('.//img')[0].get('src')
     href = show.xpath('.//div/a')[0].get('href')
     sid = href.split('/')[-2]
-    dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, None, thumb), sid=sid))
-  return dir
+    if PlatformCanDecrypt():
+        dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, None, thumb), sid=sid))
+    else:
+        dir.Append(WebVideoItem(PBS_WEB_VIDEO_PREFIX % sid, title, subtitle, summary, None, thumb))
+    return dir
   
 ####################################################################################################
 def GetEpisodes(sender, pid, page=1):
@@ -69,7 +75,10 @@ def GetEpisodes(sender, pid, page=1):
      duration = duration * 1000
      thumb = episode.xpath('.//img[@class="thumbnail"]')[0].get('src')
      sid = episode.xpath('.//input[@class="contentID"]')[0].get('value')
-     dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, duration, thumb), sid=sid))
+     if PlatformCanDecrypt():
+        dir.Append(Function(VideoItem(PlayVideo, title, subtitle, summary, duration, thumb), sid=sid))
+     else:
+        dir.Append(WebVideoItem(PBS_WEB_VIDEO_PREFIX % sid, title, subtitle, summary, duration, thumb))
   return dir
   
 ####################################################################################################
@@ -85,13 +94,23 @@ def Search(sender, query, page=1):
       summary = ''.join(show.xpath('.//p[@class="ez-desc"]//text()'))
       thumb = show.xpath('.//img[@class="ez-primaryThumb"]')[0].get('src')
       sid = show.xpath('.//a[@class="ez-title"]')[0].get('href').split('/')[-1]
-      dir.Append(Function(VideoItem(PlayVideo, title, summary=summary, thumb=thumb), sid=sid))
+      if PlatformCanDecrypt():
+        dir.Append(Function(VideoItem(PlayVideo, title, summary=summary, thumb=thumb), sid=sid))
+      else:
+        dir.Append(WebVideoItem(PBS_WEB_VIDEO_PREFIX % sid, title, summary=summary, thumb=thumb))
     except:
       pass
   if len(data.xpath('//a[@title="Next Result Page"]')) != 0:
     dir.Append(Function(DirectoryItem(Search, title="More results"), query=query, page=page+1))
   return dir
 
+####################################################################################################
+def PlatformCanDecrypt():
+    if Platform.OS == "MacOSX" or Platform.OS == "Linux":
+        return True
+    else:
+        return False
+  
 ####################################################################################################
 def ExtractReleaseUrlNative(releaseUrl):
 	Log("ReleaseURL:"+releaseUrl)

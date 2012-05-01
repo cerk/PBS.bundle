@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site site="http://www-tc.pbs.org"
+	    plugin="http://www-tc.pbs.org/s3/pbs.videoportal-prod.cdn/media/swf/PBSPlayer.swf"
+      		initialState="playing"
+			version="1.0">
+	
+	<crop x="0" y="0" width="512" height="288" />
+    
+    <!-- SEEKBAR - does not work probably due to it being semi-transparent
+    <seekbar type="thumb">
+        <start x="0" y="247" />
+        <end x="511" y="247" />
+        <played>
+            <color rgb="70B010" op="brighter-than" />
+        </played>
+    </seekbar>
+    -->
+
+	<!-- PLAYING -->
+	<state name="playing">
+		<event>
+			<condition>
+				<command name="pause" />
+			</condition>
+			<action>
+				<move x="20" y="269" />
+				<pause time="100" />
+				<click x="20" y="269" />
+				<goto state="paused" />
+			</action>
+		</event>
+    </state>
+
+	<!-- PAUSED -->
+	<state name="paused">
+		<event>
+			<condition>
+				<command name="play" />
+			</condition>
+			<action>
+				<move x="20" y="269" />
+				<pause time="100" />
+				<click x="20" y="269" />
+				<goto state="playing" />
+			</action>
+		</event> 
+	</state>
+</site>
