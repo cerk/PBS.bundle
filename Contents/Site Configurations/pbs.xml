@@ -11,13 +11,108 @@
         <start x="0" y="247" />
         <end x="511" y="247" />
         <played>
-            <color rgb="70B010" op="brighter-than" />
+            <color rgb="80A020" op="brighter-than" />
         </played>
     </seekbar>
     -->
+    
+    <!-- We are playing if the pause graphic is showing -->
+	<condition name="playing">  
+        <and>
+            <color x="15" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="25" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="263" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="276" rgb="B0B0B0" op="brighter-than" />
+            <!--
+            <color x="19" y="266" rgb="404040" op="dimmer-than" />
+            <color x="19" y="269" rgb="404040" op="dimmer-than" />
+            <color x="19" y="273" rgb="404040" op="dimmer-than" />
+            <color x="20" y="266" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="273" rgb="B0B0B0" op="brighter-than" />
+            <color x="21" y="266" rgb="404040" op="dimmer-than" />
+            <color x="21" y="269" rgb="404040" op="dimmer-than" />
+            <color x="21" y="273" rgb="404040" op="dimmer-than" />
+            -->
+            <color x="19" y="269" rgb="404040" op="dimmer-than" />
+            <color x="20" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="21" y="269" rgb="404040" op="dimmer-than" />
+        </and>
+    </condition>
 
+    <!-- We are paused if the play graphic is showing -->
+	<condition name="paused">  
+        <and>
+            <color x="15" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="25" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="263" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="276" rgb="B0B0B0" op="brighter-than" />
+            <!--
+            <color x="19" y="264" rgb="B0B0B0" op="brighter-than" />
+            <color x="19" y="276" rgb="B0B0B0" op="brighter-than" />
+            <color x="22" y="264" rgb="B0B0B0" op="brighter-than" />
+            <color x="22" y="276" rgb="B0B0B0" op="brighter-than" />
+            <color x="19" y="267" rgb="404040" op="dimmer-than" />
+            <color x="19" y="269" rgb="404040" op="dimmer-than" />
+            <color x="19" y="272" rgb="404040" op="dimmer-than" />
+            <color x="22" y="269" rgb="404040" op="dimmer-than" />
+            -->
+            <color x="18" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="269" rgb="404040" op="dimmer-than" />
+            <color x="25" y="269" rgb="B0B0B0" op="brighter-than" />
+        </and>
+    </condition>
+       
+    <!-- We are done if the related videos page appears -->
+	<condition name="done">  
+        <and>
+            <!-- Copied from the "paused" condition -->
+            <color x="15" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="25" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="263" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="276" rgb="B0B0B0" op="brighter-than" />
+            <!--
+            <color x="19" y="264" rgb="B0B0B0" op="brighter-than" />
+            <color x="19" y="276" rgb="B0B0B0" op="brighter-than" />
+            <color x="22" y="264" rgb="B0B0B0" op="brighter-than" />
+            <color x="22" y="276" rgb="B0B0B0" op="brighter-than" />
+            <color x="19" y="267" rgb="404040" op="dimmer-than" />
+            <color x="19" y="269" rgb="404040" op="dimmer-than" />
+            <color x="19" y="272" rgb="404040" op="dimmer-than" />
+            <color x="22" y="269" rgb="404040" op="dimmer-than" />
+            -->
+            <color x="18" y="269" rgb="B0B0B0" op="brighter-than" />
+            <color x="20" y="269" rgb="404040" op="dimmer-than" />
+            <color x="25" y="269" rgb="B0B0B0" op="brighter-than" />
+
+            <!-- Check for the white L in "Play Video Again" -->
+            <color x="216" y="80" rgb="809030" op="dimmer-than" />
+            <color x="217" y="80" rgb="FFFFFF" />
+            <color x="218" y="80" rgb="FFFFFF" />
+            <color x="219" y="80" rgb="809030" op="dimmer-than" />
+            <color x="216" y="84" rgb="809030" op="dimmer-than" />
+            <color x="217" y="84" rgb="FFFFFF" />
+            <color x="218" y="84" rgb="FFFFFF" />
+            <color x="219" y="84" rgb="809030" op="dimmer-than" />
+            <color x="216" y="87" rgb="809030" op="dimmer-than" />
+            <color x="217" y="87" rgb="FFFFFF" />
+            <color x="223" y="87" rgb="FFFFFF" />
+            <color x="224" y="87" rgb="809030" op="dimmer-than" />            
+        </and>
+    </condition> 
+    
 	<!-- PLAYING -->
 	<state name="playing">
+		<!-- Video ends -->
+		<event>
+			<condition>
+                <condition name="done" />
+			</condition>
+			<action>
+				<goto state="end" />
+			</action>
+		</event>
+        
 		<event>
 			<condition>
 				<command name="pause" />
@@ -26,13 +121,31 @@
 				<move x="20" y="269" />
 				<pause time="100" />
 				<click x="20" y="269" />
-				<goto state="paused" />
 			</action>
 		</event>
+        
+        <event>
+            <condition>
+                <condition name="paused" />
+            </condition>
+            <action>
+                <goto state="paused" />
+            </action> 
+        </event>
     </state>
 
 	<!-- PAUSED -->
 	<state name="paused">
+		<!-- Video ends -->
+		<event>
+			<condition>
+                <condition name="done" />
+			</condition>
+			<action>
+				<goto state="end" />
+			</action>
+		</event>
+        
 		<event>
 			<condition>
 				<command name="play" />
@@ -41,8 +154,17 @@
 				<move x="20" y="269" />
 				<pause time="100" />
 				<click x="20" y="269" />
-				<goto state="playing" />
 			</action>
 		</event> 
+        
+        <event>
+            <condition>
+                <condition name="playing" />
+            </condition>
+            <action>
+                <goto state="playing" />
+                <move x="0" y="0" />
+            </action> 
+        </event>
 	</state>
 </site>
